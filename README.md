@@ -1,25 +1,7 @@
 Hacker News (unofficial) API
 ============================
 
-Yet another unofficial API for [Hacker News](http://news.ycombinator.com/). Currently being used by [my other project](https://github.com/cheeaun/hackerweb). Feel free to fork and contribute.
-
-- API: <https://node-hnapi.herokuapp.com/>
-- API (Cloudflare CDN, faster response time): <http://api.hackerwebapp.com/>
-- API Documentation: <https://github.com/cheeaun/node-hnapi/wiki/API-Documentation>
-
----
-
-☕️ Buy me a coffee ☕ (server, domain & maintenance)
---
-
-[![Donate](https://d1iczxrky3cnb2.cloudfront.net/button-small-blue.png)](https://donorbox.org/support-cheeaun) [![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/cheeaun)
-
----
-
-🚧 PLEASE READ THIS 🚧
----
-
-If you are planning to scrape a *huge* amount of posts or (historical) data from HN, please **don't use this API**. Use the official [Hacker News API](https://github.com/HackerNews/API) or [HN Search API](http://hn.algolia.com/api) instead.
+Yet another unofficial API for [Hacker News] that was [forked from cheeaun](https://github.com/cheeaun/node-hnapi).
 
 ---
 
@@ -37,7 +19,7 @@ Quick Start
 Example
 -------------
 
-> <http://api.hackerwebapp.com/news?page=2>
+> <http://localhost:1337/news?page=2>
 
 Configuration
 -------------
