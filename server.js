@@ -101,6 +101,10 @@ app.use(function (req, res, next) {
 })
 
 app.get('/', function (req, res) {
+  const memoryUsage = process.memoryUsage()
+  for (const key in memoryUsage) {
+    memoryUsage[key] = `${Math.round(memoryUsage[key] / 1024 / 1024 * 100) / 100} MB`
+  }
   res.type('application/json')
   res.send(JSON.stringify({
     name: 'greengiraffe/node-hnapi',
@@ -109,7 +113,7 @@ app.get('/', function (req, res) {
     project_url: 'https://github.com/greengiraffe/node-hnapi',
     process: {
       versions: process.versions,
-      memoryUsage: process.memoryUsage()
+      memoryUsage
     },
     nodeCacheStats: {
       ...cache.stats
