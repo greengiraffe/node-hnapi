@@ -5,6 +5,7 @@
     "node": ">=10.x"
   },
   "scripts": {
+    "start": "node server.js",
     "lint": "eslint '**/*.js'",
     "lint:fix": "eslint --fix '**/*.js'"
   },

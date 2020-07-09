@@ -12,33 +12,30 @@ const hnapi = require('./lib/hnapi')
 const Cache = require('./lib/cache')
 const request = require('./lib/request')
 
-var CACHE_EXP = parseInt(process.env.CACHE_EXP, 10)
+const CACHE_TTL = parseInt(process.env.CACHE_TTL, 10)
+
 const {
   PORT,
   LOG_REFERER,
   LOG_USERAGENT,
-  CACHE_STORE,
-  CACHE_SERVER,
-  CACHE_MEMORY,
+  REDIS_SERVER,
   RATELIMIT_BLACKLIST
 } = process.env
 
-// Cache
-let cacheMemory = CACHE_MEMORY
-if (typeof cacheMemory === 'string') cacheMemory = cacheMemory === 'true'
-const cache = Cache({
-  memory: cacheMemory,
-  expiry: CACHE_EXP,
-  store: CACHE_STORE,
-  options: {
-    server: CACHE_SERVER,
-    onConnect: () => {
-      console.info('Connected to cache server.')
-    },
-    onError: (e) => {
-      if (e) console.error(e.toString ? e.toString() : e)
-    }
+const redisOptions = REDIS_SERVER ? {
+  server: REDIS_SERVER,
+  onConnect: () => {
+    console.info('Connected to cache server.')
+  },
+  onError: (e) => {
+    if (e) console.error(e.toString ? e.toString() : e)
   }
+} : undefined
+
+// Cache
+const cache = new Cache({
+  ttl: CACHE_TTL,
+  redisOptions
 })
 
 const app = express()
@@ -80,7 +77,7 @@ if (RATELIMIT_BLACKLIST) {
 }
 
 app.use(function (req, res, next) {
-  res.setHeader('Cache-Control', 'public, max-age=' + CACHE_EXP + ', s-maxage=' + Math.round(CACHE_EXP / 2))
+  res.setHeader('Cache-Control', 'public, max-age=' + CACHE_TTL + ', s-maxage=' + Math.round(CACHE_TTL / 2))
   next()
 })
 app.use(cors())
@@ -106,21 +103,16 @@ app.use(function (req, res, next) {
 app.get('/', function (req, res) {
   res.type('application/json')
   res.send(JSON.stringify({
-    name: 'node-hnapi',
+    name: 'greengiraffe/node-hnapi',
     desc: 'Unofficial Hacker News API',
     version: '1.0.0',
-    project_url: 'https://github.com/cheeaun/node-hnapi/',
-    documentation_url: 'https://github.com/cheeaun/node-hnapi/wiki/API-Documentation',
-    author: 'cheeaun',
-    author_url: 'http://cheeaun.com/',
+    project_url: 'https://github.com/greengiraffe/node-hnapi',
     process: {
       versions: process.versions,
       memoryUsage: process.memoryUsage()
     },
-    memory: {
-      size: cache._memory.size(),
-      memsize: cache._memory.memsize(),
-      keys: cache._memory.keys()
+    nodeCacheStats: {
+      ...cache.stats
     }
   }, null, 4))
 })
@@ -156,10 +148,9 @@ app.get(/^\/(news|news2|newest|ask|show|jobs|best)$/, function (req, res) {
     page = 2
   }
   var cacheKey = base + (page > 1 ? page : '')
-  cache.get(cacheKey, function (_, result) { // TODO handle error case
-    if (result) {
-      res.jsonp(result)
-    } else {
+  cache.get(cacheKey)
+    .then(value => res.jsonp(value))
+    .catch(e => {
       hnapi[base]({
         page: page
       }, function (err, data) {
@@ -167,23 +158,21 @@ app.get(/^\/(news|news2|newest|ask|show|jobs|best)$/, function (req, res) {
           errorRespond(res, err)
           return
         }
-        cache.set(cacheKey, data, CACHE_EXP)
+        cache.set(cacheKey, data) // TODO handle promise
         res.jsonp(data)
       })
 
       // If 'news' expired, 'news2' should expire too
       if (cacheKey === 'news' || cacheKey === 'news1') cache.del('news2')
-    }
-  })
+    })
 })
 
 app.get(/^\/(shownew|active|noobstories)$/, function (req, res) {
   var cacheKey = req.params[0]
-  cache.get(cacheKey, function (_, result) { // TODO handle error case
-    if (result) {
-      res.jsonp(result)
-    } else {
-      var path = '/' + cacheKey
+  cache.get(cacheKey)
+    .then(value => res.jsonp(value)) // TODO handle error case
+    .catch(e => {
+      const path = '/' + cacheKey
       request.push(path, { ip: reqIP(req) }, function (err, body) {
         if (err) {
           errorRespond(res, err)
@@ -194,43 +183,39 @@ app.get(/^\/(shownew|active|noobstories)$/, function (req, res) {
             errorRespond(res, e)
             return
           }
-          cache.set(cacheKey, data, CACHE_EXP)
+          cache.set(cacheKey, data) // TODO handle promise
           res.jsonp(data)
         })
       })
-    }
-  })
+    })
 })
 
 app.get(/^\/item\/(\d+)$/, function (req, res) {
   var postID = req.params[0]
   var cacheKey = 'post' + postID
-  cache.get(cacheKey, function (_, result) { // TODO handle error case
-    if (result) {
-      res.jsonp(result)
-    } else {
-      var start = Date.now()
+  cache.get(cacheKey)
+    .then(value => res.jsonp(value))
+    .catch(e => {
+      const start = Date.now()
       hnapi.item(postID, function (err, data) {
         if (err) {
           errorRespond(res, err)
           return
         }
-        var time = Date.now() - start
+        const time = Date.now() - start
         if (time > 25000) console.info('Fetch duration for #' + postID + ': ' + time + 'ms')
-        cache.set(cacheKey, data, CACHE_EXP)
+        cache.set(cacheKey, data) // TODO handle promise
         res.jsonp(data)
       })
-    }
-  })
+    })
 })
 
 app.get('/newcomments', function (req, res) {
   var cacheKey = 'newcomments'
-  cache.get(cacheKey, function (_, result) { // TODO handle error case
-    if (result) {
-      res.jsonp(result)
-    } else {
-      var path = '/' + cacheKey
+  cache.get(cacheKey)
+    .then(value => res.jsonp(value))
+    .catch(e => {
+      const path = '/' + cacheKey
       request.push(path, { ip: reqIP(req) }, function (err, body) {
         if (err) {
           errorRespond(res, err)
@@ -241,32 +226,29 @@ app.get('/newcomments', function (req, res) {
             errorRespond(res, e)
             return
           }
-          cache.set(cacheKey, data, CACHE_EXP)
+          cache.set(cacheKey, data) // TODO handle promise
           res.jsonp(data)
         })
       })
-    }
-  })
+    })
 })
 
 app.get(/^\/user\/([\w-]+)$/, function (req, res) {
   var userID = req.params[0]
   var cacheKey = 'user' + userID
-  cache.get(cacheKey, function (_, result) { // TODO handle error case
-    if (result) {
-      res.jsonp(result)
-    } else {
+  cache.get(cacheKey)
+    .then(value => res.jsonp(value))
+    .catch(e => {
       hnapi.user(userID, function (err, data) {
         if (err) {
           errorRespond(res, err)
           return
         }
-        cache.set(cacheKey, data, CACHE_EXP)
+        cache.set(cacheKey, data) // TODO handle promise
         res.jsonp(data)
       })
-    }
-  })
+    })
 })
 
 app.listen(PORT)
-console.log('Listening to port ' + PORT)
+console.log('Listening on port ' + PORT)
