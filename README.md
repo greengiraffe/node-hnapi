@@ -37,7 +37,7 @@ HNapi uses [dotenv](https://github.com/motdotla/dotenv) for configuration.
 License
 -------
 
-Licensed under the [MIT License](http://cheeaun.mit-license.org/).
+Licensed under the MIT License (see LICENSE file).
 
 Other APIs
 ----------
