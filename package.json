@@ -6,6 +6,8 @@
   },
   "scripts": {
     "start": "node server.js",
+    "dev": "pm2 start server.js --watch",
+    "prod": "pm2 start server.js --name hnapi --max-memory-restart 150M --exp-backoff-restart-delay=100 --watch",
     "lint": "eslint '**/*.js'",
     "lint:fix": "eslint --fix '**/*.js'"
   },
@@ -27,6 +29,7 @@
     "morgan": "~1.9.1",
     "node-cache": "^5.1.1",
     "on-headers": "~1.0.2",
+    "pm2": "^4.4.0",
     "timequeue": "~1.2.0"
   },
   "devDependencies": {
