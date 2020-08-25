@@ -12,7 +12,7 @@ const hnapi = require('./lib/hnapi')
 const Cache = require('./lib/cache')
 const request = require('./lib/request')
 
-const CACHE_TTL = parseInt(process.env.CACHE_TTL, 10)
+const CACHE_TTL = parseInt(process.env.CACHE_TTL) || 600
 
 const {
   PORT,
