@@ -133,7 +133,7 @@ app.get('/robots.txt', function (req, res) {
 var errorRespond = function (res, error) {
   console.error(error)
   if (!res.headersSent) {
-    res.jsonp({
+    res.json({
       error: error.message || JSON.parse(stringify(error))
     })
   }
@@ -153,7 +153,7 @@ app.get(/^\/(news|news2|newest|ask|show|jobs|best)$/, function (req, res) {
   }
   var cacheKey = base + (page > 1 ? page : '')
   cache.get(cacheKey)
-    .then(value => res.jsonp(value))
+    .then(value => res.json(value))
     .catch(e => {
       hnapi[base]({
         page: page
@@ -163,7 +163,7 @@ app.get(/^\/(news|news2|newest|ask|show|jobs|best)$/, function (req, res) {
           return
         }
         cache.set(cacheKey, data) // TODO handle promise
-        res.jsonp(data)
+        res.json(data)
       })
 
       // If 'news' expired, 'news2' should expire too
@@ -174,7 +174,7 @@ app.get(/^\/(news|news2|newest|ask|show|jobs|best)$/, function (req, res) {
 app.get(/^\/(shownew|active|noobstories)$/, function (req, res) {
   var cacheKey = req.params[0]
   cache.get(cacheKey)
-    .then(value => res.jsonp(value)) // TODO handle error case
+    .then(value => res.json(value)) // TODO handle error case
     .catch(e => {
       const path = '/' + cacheKey
       request.push(path, { ip: reqIP(req) }, function (err, body) {
@@ -188,7 +188,7 @@ app.get(/^\/(shownew|active|noobstories)$/, function (req, res) {
             return
           }
           cache.set(cacheKey, data) // TODO handle promise
-          res.jsonp(data)
+          res.json(data)
         })
       })
     })
@@ -198,7 +198,7 @@ app.get(/^\/item\/(\d+)$/, function (req, res) {
   var postID = req.params[0]
   var cacheKey = 'post' + postID
   cache.get(cacheKey)
-    .then(value => res.jsonp(value))
+    .then(value => res.json(value))
     .catch(e => {
       const start = Date.now()
       hnapi.item(postID, function (err, data) {
@@ -209,7 +209,7 @@ app.get(/^\/item\/(\d+)$/, function (req, res) {
         const time = Date.now() - start
         if (time > 25000) console.info('Fetch duration for #' + postID + ': ' + time + 'ms')
         cache.set(cacheKey, data) // TODO handle promise
-        res.jsonp(data)
+        res.json(data)
       })
     })
 })
@@ -217,7 +217,7 @@ app.get(/^\/item\/(\d+)$/, function (req, res) {
 app.get('/newcomments', function (req, res) {
   var cacheKey = 'newcomments'
   cache.get(cacheKey)
-    .then(value => res.jsonp(value))
+    .then(value => res.json(value))
     .catch(e => {
       const path = '/' + cacheKey
       request.push(path, { ip: reqIP(req) }, function (err, body) {
@@ -231,7 +231,7 @@ app.get('/newcomments', function (req, res) {
             return
           }
           cache.set(cacheKey, data) // TODO handle promise
-          res.jsonp(data)
+          res.json(data)
         })
       })
     })
@@ -241,7 +241,7 @@ app.get(/^\/user\/([\w-]+)$/, function (req, res) {
   var userID = req.params[0]
   var cacheKey = 'user' + userID
   cache.get(cacheKey)
-    .then(value => res.jsonp(value))
+    .then(value => res.json(value))
     .catch(e => {
       hnapi.user(userID, function (err, data) {
         if (err) {
@@ -249,7 +249,7 @@ app.get(/^\/user\/([\w-]+)$/, function (req, res) {
           return
         }
         cache.set(cacheKey, data) // TODO handle promise
-        res.jsonp(data)
+        res.json(data)
       })
     })
 })
