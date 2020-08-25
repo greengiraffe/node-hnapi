@@ -30,7 +30,7 @@ HNapi uses [dotenv](https://github.com/motdotla/dotenv) for configuration.
 - `CACHE_TTL` - (default: `600`) Cache time-to-live in seconds
 - `LOG_REFERER` - (default: `false`) Logs referers
 - `LOG_USERAGENT` - (default: `false`) Logs user-agent strings
-- `REDIS_SERVER` - `HOST:PORT` for Redis server (if not defined, node-cache (in-memory caching) will be used)
+- `REDIS_URL` - `redis://USER:PASSWORD@REDIS_SERVER:PORT` to use Redis for caching (if not defined, node in-memory caching will be used).
 
 License
 -------

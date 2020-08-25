@@ -18,14 +18,23 @@ const {
   PORT,
   LOG_REFERER,
   LOG_USERAGENT,
-  REDIS_SERVER,
+  REDIS_URL,
   RATELIMIT_BLACKLIST
 } = process.env
 
-const redisOptions = REDIS_SERVER ? {
-  server: REDIS_SERVER,
+let CACHE_TYPE = 'memory'
+if (REDIS_URL) {
+  if (REDIS_URL.startsWith('redis://')) {
+    CACHE_TYPE = 'redis'
+  } else {
+    console.warn('Bad REDIS_URL provided! Falling back to node memory cache. The REDIS_URL should follow this scheme: redis://user:password@serviceUrl:port')
+  }
+}
+
+const redisOptions = CACHE_TYPE === 'redis' ? {
+  url: REDIS_URL,
   onConnect: () => {
-    console.info('Connected to cache server.')
+    console.info('Connected to Redis cache server.')
   },
   onError: (e) => {
     if (e) console.error(e.toString ? e.toString() : e)
@@ -34,6 +43,7 @@ const redisOptions = REDIS_SERVER ? {
 
 // Cache
 const cache = new Cache({
+  cacheType: CACHE_TYPE,
   ttl: CACHE_TTL,
   redisOptions
 })
@@ -100,10 +110,17 @@ app.use(function (req, res, next) {
   next()
 })
 
-app.get('/', function (req, res) {
+app.get('/', async function (req, res) {
   const memoryUsage = process.memoryUsage()
   for (const key in memoryUsage) {
     memoryUsage[key] = `${Math.round(memoryUsage[key] / 1024 / 1024 * 100) / 100} MB`
+  }
+  let cacheStats = {}
+  try {
+    cacheStats = await cache.stats()
+  } catch (e) {
+    console.error('Could not get cache stats')
+    console.error(e)
   }
   res.type('application/json')
   res.send(JSON.stringify({
@@ -115,9 +132,8 @@ app.get('/', function (req, res) {
       versions: process.versions,
       memoryUsage
     },
-    nodeCacheStats: {
-      ...cache.stats
-    }
+    cacheType: CACHE_TYPE,
+    cacheStats
   }, null, 4))
 })
 
