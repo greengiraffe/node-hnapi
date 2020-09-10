@@ -1,6 +1,7 @@
 require('dotenv').config()
 
 const express = require('express')
+const helmet = require('helmet')
 const morgan = require('morgan')
 const compress = require('compression')
 const onHeaders = require('on-headers')
@@ -49,6 +50,7 @@ const cache = new Cache({
 })
 
 const app = express()
+app.use(helmet())
 app.set('json spaces', 0)
 app.enable('trust proxy')
 

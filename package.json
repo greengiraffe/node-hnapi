@@ -22,6 +22,7 @@
     "extend": "~3.0.2",
     "firebase": "^7.16.0",
     "he": "~1.2.0",
+    "helmet": "^4.1.0",
     "ioredis": "~4.6.2",
     "json-stringify-safe": "~5.0.1",
     "memory-cache": "~0.2.0",
